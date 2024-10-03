@@ -19,15 +19,20 @@ exports.updateProfile = async (req, res) => {
 		}
 
 		if (contactPersonInfo) {
+			const parsedContactPersonInfo = JSON.parse(contactPersonInfo);
 			user.profile.contactPersonInfo = {
 				...user.profile.contactPersonInfo,
-				...JSON.parse(contactPersonInfo), // Parse JSON data received in form
+				name: parsedContactPersonInfo.contactPersonName,
+				email: parsedContactPersonInfo.contactPersonEmail,
+				phoneNumber: parsedContactPersonInfo.contactPersonNumber,
+				department: parsedContactPersonInfo.department,
+				designation: parsedContactPersonInfo.designation,
 			};
 		}
 
 		// Handle certificates upload (only for suppliers or agents)
 		if (user.businessType === "supplier" || user.businessType === "agent") {
-			if (req.body.certificateNames && req.files.length) {
+			if (req.body.certificateNames && req?.files?.length) {
 				const certificateNames = JSON.parse(req.body.certificateNames); // Parse certificate names from JSON string
 				const newCertificates = req.files.map((file, index) => ({
 					name: certificateNames[index], // Match certificate name with the uploaded file
@@ -46,6 +51,7 @@ exports.updateProfile = async (req, res) => {
 			certificates: user.certificates,
 		});
 	} catch (error) {
+		console.error(error);
 		res.status(500).json({ message: "Server error", error });
 	}
 };
@@ -55,7 +61,6 @@ exports.signupUser = async (req, res) => {
 	const { industryName, email, confirmPassword, password, businessType } =
 		req.body;
 
-	console.log(req.body);
 	try {
 		if (password !== confirmPassword)
 			return res.status(400).json({ message: "Passwords do not match" });
@@ -78,7 +83,7 @@ exports.signupUser = async (req, res) => {
 			token: generateToken(user),
 		});
 	} catch (error) {
-		console.log(error);
+		console.error(error);
 		res.status(500).json({ message: "Server error" });
 	}
 };
