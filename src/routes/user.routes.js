@@ -1,12 +1,12 @@
 const express = require("express");
-const { protect } = require("../../middleware/auth");
-const upload = require("../../middleware/upload");
+const { protect } = require("../middleware/auth.middleware");
+const upload = require("../middleware/upload.middleware");
 const {
 	signupUser,
 	loginUser,
 	logoutUser,
 	updateProfile,
-} = require("./controller");
+} = require("../controllers/user.controller");
 const router = express.Router();
 
 router.post("/signup", signupUser);
