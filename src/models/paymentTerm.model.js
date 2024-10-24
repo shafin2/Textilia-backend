@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-const proposalSchema = new mongoose.Schema(
+const payment_termSchema = new mongoose.Schema(
 	{
 		userId: {
 			type: mongoose.Schema.Types.ObjectId,
@@ -48,13 +48,13 @@ const proposalSchema = new mongoose.Schema(
 		status: {
 			type: String,
 			enum: [
-				"proposal_sent_received",
-				"proposal_replied",
+				"payment_term_sent_received",
+				"payment_term_replied",
 				"contract_sent_received",
 				"contracted",
 				"renew_requested_received",
 			],
-			default: "proposal_sent_received",
+			default: "payment_term_sent_received",
 		},
 		revision: { type: Number, default: 0 },
 		days: { type: Number, required: true },
@@ -83,4 +83,4 @@ const proposalSchema = new mongoose.Schema(
 	}
 );
 
-module.exports = mongoose.model("Proposal", proposalSchema);
+module.exports = mongoose.model("Proposal", payment_termSchema);
