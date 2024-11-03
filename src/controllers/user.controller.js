@@ -1,6 +1,6 @@
-const User = require("./model");
+const User = require("../models/user.model");
 const bcrypt = require("bcryptjs");
-const { generateToken } = require("../../util/token");
+const { generateToken } = require("../util/token");
 
 // Update user profile and handle certificate uploads
 exports.updateProfile = async (req, res) => {
