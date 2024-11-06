@@ -1,11 +1,13 @@
 const express = require("express");
 const { protect } = require("../middleware/auth.middleware");
 
-const userRoutes = require("./user.routes");
+const authRoutes = require("./auth.routes");
+const userRoutes = require("./users.routes");
 const paymentTermRoutes = require("./paymentTerms.routes");
 
 const router = express.Router();
 
+router.use("/auth", authRoutes);
 router.use("/users", userRoutes);
 router.use("/payment-terms", paymentTermRoutes);
 

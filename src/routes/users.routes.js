@@ -1,17 +1,18 @@
 const express = require("express");
+const router = express.Router();
 const { protect } = require("../middleware/auth.middleware");
 const upload = require("../middleware/upload.middleware");
 const {
-	signupUser,
-	loginUser,
-	logoutUser,
 	updateProfile,
-} = require("../controllers/user.controller");
-const router = express.Router();
+	getSuppliers,
+} = require("../controllers/users.contorller");
 
-router.post("/signup", signupUser);
-router.post("/login", loginUser);
-router.get("/logout", logoutUser);
+router.get(
+	"/suppliers",
+	// protect(),
+	getSuppliers
+);
+
 router.put(
 	"/profile",
 	protect(),
