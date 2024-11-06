@@ -11,19 +11,79 @@ const getAllPaymentTerms = async (req, res) => {
 	}
 };
 
+const getAllNewSupplyChainProposals = async (req, res) => {
+	try {
+		const { userId } = req.params;
+
+		if (!userId) {
+			return res.status(400).json({ message: "Invalid user ID." });
+		}
+
+		const paymentTerms = await PaymentTerm.find({
+			$or: [{ userId: userId }, { supplier: userId }],
+			$and: [{ general: false }],
+		})
+			.populate("supplier", "name _id")
+			.populate("userId", "name _id");
+
+		console.log("paymentTerms", paymentTerms);
+		res.status(200).json(paymentTerms);
+	} catch (error) {
+		res.status(500).json({ message: "Error getting payment terms.", error });
+	}
+};
+
+// Get General PaymentTerm
+const getGeneralPaymentTerm = async (req, res) => {
+	try {
+		const { userId } = req.params;
+
+		if (!userId) {
+			return res.status(400).json({ message: "Invalid user ID." });
+		}
+
+		const generalTerms = await PaymentTerm.findOne({
+			userId,
+			general: true,
+		});
+		if (!generalTerms) {
+			return res.status(200).json(null);
+		}
+
+		res.status(200).json(generalTerms);
+	} catch (error) {
+		res
+			.status(500)
+			.json({ message: "Error getting general payment Term.", error });
+	}
+};
+
 // Create General PaymentTerm
 const createGeneralPaymentTerm = async (req, res) => {
 	try {
-		const { userId, mode, shipmentTerms, businessConditions, days } = req.body;
+		const { userId, paymentMode, shipmentTerms, businessConditions, days } =
+			req.body;
 
 		const paymentTerm = new PaymentTerm({
 			userId,
 			general: true,
-			mode,
+			paymentMode,
 			shipmentTerms,
 			businessConditions,
 			days,
 		});
+
+		if (userId) {
+			const existingProposal = await PaymentTerm.findOne({
+				userId,
+				general: true,
+			});
+			if (existingProposal) {
+				return res
+					.status(400)
+					.json({ message: "General Proposal already exists." });
+			}
+		}
 
 		await paymentTerm.save();
 		res.status(201).json({
@@ -40,28 +100,41 @@ const createGeneralPaymentTerm = async (req, res) => {
 // update the general PaymentTerm
 const updateGeneralPaymentTerm = async (req, res) => {
 	try {
-		const { paymentTermId, mode, shipmentTerms, businessConditions, days } =
-			req.body;
+		const { paymentMode, shipmentTerms, businessConditions, days } = req.body;
+		const { generalTermId } = req.params;
 
-		const paymentTerm = await PaymentTerm.findById(paymentTermId);
-		if (!paymentTerm) {
-			return res.status(404).json({ message: "Payment Term not found." });
+		console.log("generalTermId", generalTermId);
+
+		if (
+			generalTermId === "undefined" ||
+			generalTermId === null ||
+			!generalTermId ||
+			!paymentMode ||
+			!shipmentTerms ||
+			!businessConditions ||
+			!days
+		) {
+			return res.status(400).json({ message: "Invalid request." });
 		}
 
-		paymentTerm.mode = mode;
-		paymentTerm.shipmentTerms = shipmentTerms;
-		paymentTerm.businessConditions = businessConditions;
-		paymentTerm.days = days;
-		await paymentTerm.save();
+		const generalTerm = await PaymentTerm.findById(generalTermId);
+		if (!generalTerm) {
+			return res.status(404).json({ message: "General Term not found." });
+		}
+
+		generalTerm.paymentMode = paymentMode;
+		generalTerm.shipmentTerms = shipmentTerms;
+		generalTerm.businessConditions = businessConditions;
+		generalTerm.days = days;
+		await generalTerm.save();
 
 		res.status(200).json({
-			message: "General payment Term updated successfully.",
-			paymentTerm,
+			message: "General Term updated successfully.",
+			generalTerm,
 		});
 	} catch (error) {
-		res
-			.status(500)
-			.json({ message: "Error updating general payment Term.", error });
+		console.log("error", error);
+		res.status(500).json({ message: "Error updating general Term.", error });
 	}
 };
 
@@ -71,12 +144,14 @@ const createNewPaymentTerm = async (req, res) => {
 		const {
 			userId,
 			supplier,
-			mode,
+			paymentMode,
 			shipmentTerms,
 			businessConditions,
 			days,
 			endDate,
 		} = req.body;
+
+		console.log("req.body", req.body);
 
 		if (supplier) {
 			const user = await User.findById(supplier);
@@ -95,11 +170,12 @@ const createNewPaymentTerm = async (req, res) => {
 		const paymentTerm = new PaymentTerm({
 			userId,
 			supplier,
-			mode,
+			paymentMode,
 			shipmentTerms,
 			businessConditions,
 			days,
 			endDate,
+			status: "proposal_sent_received",
 		});
 
 		await paymentTerm.save();
@@ -119,59 +195,115 @@ const renewPaymentTerm = async (req, res) => {
 		const {
 			paymentTermId,
 			newEndDate,
-			mode,
+			paymentMode,
 			shipmentTerms,
 			businessConditions,
 			days,
 		} = req.body;
 
+		// Find the existing payment term
 		const paymentTerm = await PaymentTerm.findById(paymentTermId);
 		if (!paymentTerm) {
 			return res.status(404).json({ message: "Payment Term not found." });
 		}
 
+		// Add the new revision to the revisions array
+		paymentTerm.revisions.push({
+			paymentMode: paymentTerm.paymentMode,
+			shipmentTerms: paymentTerm.shipmentTerms,
+			businessConditions: paymentTerm.businessConditions,
+			status: paymentTerm.status,
+			supplierShipmentTerms: paymentTerm.supplierShipmentTerms,
+			supplierBusinessConditions: paymentTerm.supplierBusinessConditions,
+			supplierEndDate: paymentTerm.supplierEndDate,
+			days: paymentTerm.days,
+			endDate: paymentTerm.endDate,
+		});
+
+		// Update the fields with new values
 		paymentTerm.endDate = newEndDate;
-		paymentTerm.mode = mode;
+		paymentTerm.paymentMode = paymentMode;
 		paymentTerm.shipmentTerms = shipmentTerms;
 		paymentTerm.businessConditions = businessConditions;
 		paymentTerm.days = days;
-		paymentTerm.revision += 1;
-		paymentTerm.status = "renew_requested_received";
+		paymentTerm.status = "renew_requested_received"; // Status of the renewal
+
+		// Save the updated payment term document
 		await paymentTerm.save();
 
+		// Send the response with the updated payment term
 		res
 			.status(200)
 			.json({ message: "Payment Term renewed successfully.", paymentTerm });
 	} catch (error) {
-		res.status(500).json({ message: "Error renewing payment Term.", error });
+		// Handle errors
+		res.status(500).json({ message: "Error renewing payment term.", error });
 	}
 };
 
-// Reply to PaymentTerm
 const replyToPaymentTerm = async (req, res) => {
 	try {
 		const {
-			paymentTermId,
+			proposalId,
+			supplierId,
+			customerId,
 			supplierShipmentTerms,
 			supplierBusinessConditions,
 			supplierEndDate,
 		} = req.body;
 
-		const paymentTerm = await PaymentTerm.findById(paymentTermId);
+		console.log("req.body", req.body);
+
+		// Validate required fields
+		if (!proposalId || !supplierId || !customerId) {
+			return res.status(400).json({ message: "Invalid request." });
+		}
+
+		// Check if customer exists
+		const user = await User.findOne({
+			_id: customerId,
+			businessType: "client",
+		});
+		if (!user) {
+			return res.status(400).json({ message: "Invalid User." });
+		}
+
+		// Check if supplier exists
+		const supplier = await User.findOne({
+			_id: supplierId,
+			businessType: "supplier",
+		});
+		if (!supplier) {
+			return res.status(400).json({ message: "Invalid Supplier." });
+		}
+
+		// Find the payment term
+		const paymentTerm = await PaymentTerm.findOne({
+			_id: proposalId,
+			userId: customerId,
+			supplier: supplierId,
+		});
+
 		if (!paymentTerm) {
 			return res.status(404).json({ message: "Payment Term not found." });
 		}
 
+		// Update the payment term fields
 		paymentTerm.supplierShipmentTerms = supplierShipmentTerms;
 		paymentTerm.supplierBusinessConditions = supplierBusinessConditions;
 		paymentTerm.supplierEndDate = supplierEndDate;
-		paymentTerm.status = "payment_term_replied";
+		paymentTerm.status = "proposal_replied";
+
+		console.log("paymentTerm", paymentTerm);
+
+		// Save the updated payment term
 		await paymentTerm.save();
 
 		res
 			.status(200)
 			.json({ message: "Payment Term replied successfully.", paymentTerm });
 	} catch (error) {
+		console.log("error", error);
 		res.status(500).json({ message: "Error replying to payment Term.", error });
 	}
 };
@@ -179,19 +311,39 @@ const replyToPaymentTerm = async (req, res) => {
 // Accept Contract
 const acceptContract = async (req, res) => {
 	try {
-		const { paymentTermId } = req.body;
+		const { contractId, supplierId, customerId } = req.body;
 
-		const paymentTerm = await PaymentTerm.findById(paymentTermId);
-		if (!paymentTerm) {
+		if (!contractId || !supplierId || !customerId) {
+			return res.status(400).json({ message: "Invalid request." });
+		}
+
+		const user = await User.findOne({
+			_id: customerId,
+			businessType: "client",
+		});
+		if (!user) {
+			return res.status(400).json({ message: "Invalid User." });
+		}
+
+		const supplier = await User.findOne({
+			_id: supplierId,
+			businessType: "supplier",
+		});
+		if (!supplier) {
+			return res.status(400).json({ message: "Invalid Supplier." });
+		}
+
+		const contract = await PaymentTerm.findById(contractId);
+		if (!contract) {
 			return res.status(404).json({ message: "Payment Term not found." });
 		}
 
-		paymentTerm.status = "contracted";
-		await paymentTerm.save();
+		contract.status = "contracted";
+		await contract.save();
 
 		res
 			.status(200)
-			.json({ message: "Contract accepted successfully.", paymentTerm });
+			.json({ message: "Contract accepted successfully.", contract });
 	} catch (error) {
 		res.status(500).json({ message: "Error accepting contract.", error });
 	}
@@ -211,6 +363,8 @@ const getAllUsers = async (req, res) => {
 module.exports = {
 	getAllUsers,
 	getAllPaymentTerms,
+	getAllNewSupplyChainProposals,
+	getGeneralPaymentTerm,
 	createGeneralPaymentTerm,
 	updateGeneralPaymentTerm,
 	createNewPaymentTerm,

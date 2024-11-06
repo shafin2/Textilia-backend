@@ -28,7 +28,7 @@ const payment_termSchema = new mongoose.Schema(
 			},
 		},
 		general: { type: Boolean, default: false }, // True for General Proposal
-		mode: {
+		paymentMode: {
 			type: String,
 			enum: ["advance", "credit", "pdc", "advance_pdc", "lc"],
 			required: true,
@@ -48,15 +48,13 @@ const payment_termSchema = new mongoose.Schema(
 		status: {
 			type: String,
 			enum: [
-				"payment_term_sent_received",
-				"payment_term_replied",
+				"proposal_sent_received",
+				"proposal_replied",
 				"contract_sent_received",
 				"contracted",
 				"renew_requested_received",
 			],
-			default: "payment_term_sent_received",
 		},
-		revision: { type: Number, default: 0 },
 		days: { type: Number, required: true },
 		endDate: {
 			type: Date,
@@ -75,6 +73,22 @@ const payment_termSchema = new mongoose.Schema(
 				},
 			},
 		},
+		revisions: [
+			{
+				revisionNo: { type: Number },
+				revisionDate: { type: Date, default: Date.now },
+				paymentMode: { type: String },
+				shipmentTerms: { type: String },
+				businessConditions: { type: String },
+				status: { type: String },
+				supplierShipmentTerms: { type: String },
+				supplierBusinessConditions: { type: String },
+				supplierEndDate: { type: Date },
+				days: { type: Number },
+				endDate: { type: Date },
+			},
+		],
+		revision: { type: Number, default: 0 },
 	},
 	{
 		timestamps: true,
@@ -82,5 +96,21 @@ const payment_termSchema = new mongoose.Schema(
 		toObject: { virtuals: true },
 	}
 );
+
+// Pre-save hook to update revision fields automatically
+payment_termSchema.pre("save", function (next) {
+	if (this.isModified("revisions")) {
+		// Automatically set the revision number based on the length of revisions
+		this.revision = this.revisions.length;
+		const newRevisionNo = this.revision + 1;
+
+		// Set revisionNo for the new revision
+		this.revisions[this.revisions.length - 1].revisionNo = newRevisionNo;
+	}
+	next();
+});
+
+// Create a compound index to ensure uniqueness between userId and supplier
+payment_termSchema.index({ userId: 1, supplier: 1 }, { unique: true });
 
 module.exports = mongoose.model("Proposal", payment_termSchema);
