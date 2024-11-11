@@ -5,6 +5,7 @@ const upload = require("../middleware/upload.middleware");
 const {
 	updateProfile,
 	getSuppliers,
+	listSuppliers
 } = require("../controllers/users.contorller");
 
 router.get(
