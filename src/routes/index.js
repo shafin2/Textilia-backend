@@ -6,6 +6,10 @@ const userRoutes = require("./users.routes");
 const paymentTermRoutes = require("./paymentTerms.routes");
 const generalInquiryRoutes = require("./generalInquiry.routes");
 const generalProposalRoutes = require('./generalProposal.routes');
+const blockBookingInquiryRoutes = require("./blockBookingInquiry.routes");
+
+// Add the block booking inquiry routes
+
 
 const router = express.Router();
 
@@ -14,6 +18,7 @@ router.use("/users", userRoutes);
 router.use("/payment-terms", paymentTermRoutes);
 router.use("/general-inquiries", generalInquiryRoutes);
 router.use('/general-proposals', generalProposalRoutes);
+router.use("/block-booking-inquiries", blockBookingInquiryRoutes);
 router.get("/agent-only", protect(["agent"]), (req, res) => {
 	res.json({ message: "Agent access granted" });
 });
