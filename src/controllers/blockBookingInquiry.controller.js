@@ -1,12 +1,10 @@
 const BlockBookingInquiry = require("../models/blockBookingInquiry.model");
 const sanitize = require("mongo-sanitize"); // For data sanitization
+const BlockBookingProposal = require("../models/blockBookingProposal.model");
 
 
 // Create a new block booking inquiry
 exports.createInquiry = async (req, res) => {
-    console.log("Request Received");
-    console.log(req.body);
-
     try {
         const inquiryData = req.body;
 
@@ -45,12 +43,84 @@ exports.createInquiry = async (req, res) => {
 
 // Get all inquiries for the logged-in customer
 exports.getInquiries = async (req, res) => {
-    console.log("Aya")
     try {
-        const customerId = sanitize(req.params.customerId); // Sanitize the customerId
-        const inquiries = await BlockBookingInquiry.find({ customerId: customerId });
+        // Fetch all inquiries with only the required fields
+        const inquiries = await BlockBookingInquiry.find()
+            .select("aging baseCount targetBasePrice status createdAt customerId") // Include necessary fields
+            .populate("customerId", "name email") // Optional: Populate customer details
+            .lean(); // Convert to plain JavaScript objects
+
+        // Respond with all inquiries
         res.status(200).json(inquiries);
     } catch (error) {
+        console.error("Error fetching inquiries:", error.message);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+
+exports.getCustomerInquiries = async (req, res) => {
+    try {
+        const customerId = sanitize(req.params.customerId); // Sanitize the customerId
+
+        // Fetch inquiries with only the required fields
+        const inquiries = await BlockBookingInquiry.find({ customerId: customerId })
+            .select("aging baseCount targetBasePrice status createdAt") // Project only required fields
+            .lean(); // Convert Mongoose documents to plain JavaScript objects
+
+        // Respond with the filtered inquiries
+        res.status(200).json(inquiries);
+    } catch (error) {
+        console.error("Error fetching customer inquiries:", error.message);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+exports.getInquiry = async (req, res) => {
+    try {
+        const inquiryId = sanitize(req.params.inquiryId); // Sanitize the inquiryId
+
+        // Fetch the inquiry by ID
+        const inquiry = await BlockBookingInquiry.findById(inquiryId)
+            .lean(); // Convert Mongoose document to plain JavaScript object
+
+        if (!inquiry) {
+            return res.status(404).json({ message: "Inquiry not found." });
+        }
+
+        // Respond with the inquiry data
+        res.status(200).json(inquiry);
+    } catch (error) {
+        console.error("Error fetching inquiry:", error.message);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+exports.declineInquiry = async (req, res) => {
+    try {
+        const inquiryId = sanitize(req.params.inquiryId); // Sanitize the inquiryId
+
+        // Find the inquiry by ID and update its status
+        const inquiry = await BlockBookingInquiry.findByIdAndUpdate(
+            inquiryId,
+            { status: "inquiry_declined" },
+            { new: true }
+        ).lean();
+
+        if (!inquiry) {
+            return res.status(404).json({ message: "Inquiry not found." });
+        }
+
+        // Update all proposals related to this inquiry
+        await BlockBookingProposal.updateMany(
+            { inquiryId: inquiryId },
+            { status: "inquiry_declined" }
+        );
+
+        // Respond with the updated inquiry data
+        res.status(200).json(inquiry);
+    } catch (error) {
+        console.error("Error declining inquiry:", error.message);
         res.status(500).json({ error: error.message });
     }
 };

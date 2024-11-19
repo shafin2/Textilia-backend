@@ -7,7 +7,7 @@ const paymentTermRoutes = require("./paymentTerms.routes");
 const generalInquiryRoutes = require("./generalInquiry.routes");
 const generalProposalRoutes = require('./generalProposal.routes');
 const blockBookingInquiryRoutes = require("./blockBookingInquiry.routes");
-
+const blockBookingProposalRoutes = require("./blockBookingProposal.routes");
 // Add the block booking inquiry routes
 
 
@@ -19,6 +19,7 @@ router.use("/payment-terms", paymentTermRoutes);
 router.use("/general-inquiries", generalInquiryRoutes);
 router.use('/general-proposals', generalProposalRoutes);
 router.use("/block-booking-inquiries", blockBookingInquiryRoutes);
+router.use("/block-booking-proposals", blockBookingProposalRoutes);
 router.get("/agent-only", protect(["agent"]), (req, res) => {
 	res.json({ message: "Agent access granted" });
 });
