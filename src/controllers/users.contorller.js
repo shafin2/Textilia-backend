@@ -20,7 +20,14 @@ const getSuppliers = async (req, res) => {
 
 // Update user profile and handle certificate uploads
 const updateProfile = async (req, res) => {
-	const { companyDetails, contactPersonInfo } = req.body;
+	const {
+		companyDetails,
+		contactPersonInfo,
+		certificateNames,
+		specifications,
+	} = req.body;
+
+	console.log(req.body);
 
 	try {
 		const user = await User.findById(req.user.id);
@@ -48,15 +55,60 @@ const updateProfile = async (req, res) => {
 
 		// Handle certificates upload (only for suppliers or agents)
 		if (user.businessType === "supplier" || user.businessType === "agent") {
-			if (req.body.certificateNames && req?.files?.length) {
-				const certificateNames = JSON.parse(req.body.certificateNames); // Parse certificate names from JSON string
+			// Handle certificate uploads
+			if (certificateNames && req?.files?.length) {
+				const parsedCertificateNames = JSON.parse(certificateNames); // Parse certificate names from JSON string
 				const newCertificates = req.files.map((file, index) => ({
-					name: certificateNames[index], // Match certificate name with the uploaded file
+					name: parsedCertificateNames[index], // Match certificate name with the uploaded file
 					filePath: file.path, // Store the file path
 				}));
 
 				// Update certificates
 				user.certificates = [...user.certificates, ...newCertificates];
+			}
+
+			// Handle market specifications update
+			if (specifications) {
+				const updatedSpecifications = JSON.parse(specifications);
+
+				// Iterate through each market and update the specifications
+				for (const market of Object.keys(
+					updatedSpecifications.marketSpecifications
+				)) {
+					if (user.profile.specifications.markets[market]) {
+						user.profile.specifications.markets[market] = {
+							...user.profile.specifications.markets[market],
+							...updatedSpecifications.marketSpecifications[market],
+						};
+					} else {
+						user.profile.specifications.markets[market] =
+							updatedSpecifications[market];
+					}
+				}
+
+				// Update the Material, Blend, and CountRange fields
+				if (updatedSpecifications.material) {
+					user.profile.specifications.material = updatedSpecifications.material;
+				} else {
+					return res.status(400).json({
+						message: "Material field is required in specifications",
+					});
+				}
+				if (updatedSpecifications.blend) {
+					user.profile.specifications.blend = updatedSpecifications.blend;
+				} else {
+					return res.status(400).json({
+						message: "Blend field is required in specifications",
+					});
+				}
+				if (updatedSpecifications.countRange) {
+					user.profile.specifications.countRange =
+						updatedSpecifications.countRange;
+				} else {
+					return res.status(400).json({
+						message: "CountRange field is required in specifications",
+					});
+				}
 			}
 		}
 
@@ -64,7 +116,6 @@ const updateProfile = async (req, res) => {
 		res.json({
 			message: "Profile updated successfully",
 			profile: user.profile,
-			certificates: user.certificates,
 		});
 	} catch (error) {
 		console.error(error);
