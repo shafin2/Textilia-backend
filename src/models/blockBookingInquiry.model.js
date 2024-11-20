@@ -38,7 +38,22 @@ const blockBookingInquirySchema = new mongoose.Schema({
         upcharge: { type: Number, required: true }
     }],
     createdAt: { type: Date, default: Date.now },
-    status: { type: String, enum: ["inquiry_sent", "inquiry_replied"], default: "inquiry_sent" }
+    updatedAt: { type: Date }, // Ensure this field is updated when status changes
+    aging: { type: Number, default: 0 }, 
+    status: { type: String, enum: ["inquiry_sent", "inquiry_replied", "inquiry_decline"], default: "inquiry_sent" }
+});
+
+blockBookingInquirySchema.pre("save", function (next) {
+    if (this.isModified("status")) {
+        this.updatedAt = new Date(); 
+        if (this.status === "inquiry_replied") {
+            const createdAt = this.createdAt || new Date();
+            const updatedAt = this.updatedAt || new Date();
+            const diffInTime = updatedAt.getTime() - createdAt.getTime();
+            this.aging = Math.floor(diffInTime / (1000 * 60 * 60 * 24)); 
+        }
+    }
+    next();
 });
 
 module.exports = mongoose.model("BlockBookingInquiry", blockBookingInquirySchema);
