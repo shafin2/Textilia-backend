@@ -63,8 +63,14 @@ const updateProfile = async (req, res) => {
 					filePath: file.path, // Store the file path
 				}));
 
+				console.log("newCertificates", newCertificates);
+				console.log("user.certificates", user);
+
 				// Update certificates
-				user.certificates = [...user.certificates, ...newCertificates];
+				user.profile.certificates = [
+					...user.profile.certificates,
+					...newCertificates,
+				];
 			}
 
 			// Handle market specifications update
