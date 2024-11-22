@@ -4,7 +4,7 @@ const GeneralInquiry = require("../models/generalInquiry.model");
 
 exports.createGeneralProposals = async (req, res) => {
     const proposalsData = req.body.proposals; // Expect an array of proposal details
-
+console.log(proposalsData)
     if (!Array.isArray(proposalsData) || proposalsData.length === 0) {
         return res.status(400).json({ message: "No proposals provided" });
     }
@@ -22,8 +22,7 @@ exports.createGeneralProposals = async (req, res) => {
             // Create the proposal
             const proposal = new GeneralProposal({
                 inquiryId,
-                supplierId: req.user.id, // Assuming req.user.id is the authenticated supplier's ID
-                customerId: inquiry.customerId,
+                supplierId: req.user.id,
                 rate: proposalData.rate,
                 quantity: proposalData.quantity,
                 quantityType: proposalData.quantityType, 
@@ -94,5 +93,35 @@ exports.acceptGeneralProposal = async (req, res) => {
         res.status(200).json({ message: "Proposal accepted successfully", proposal });
     } catch (error) {
         res.status(500).json({ message: "Error accepting proposal", error: error.message });
+    }
+};
+
+exports.getInquiryProposals = async (req, res) => {
+    try {
+        const { inquiryId } = req.params;
+
+        // Fetch the inquiry
+        const inquiry = await GeneralInquiry.findById(inquiryId).select("-customerId -__v");
+        if (!inquiry) {
+            return res.status(404).json({ message: "Inquiry not found." });
+        }
+
+        // Fetch all proposals for the given inquiry
+        const proposals = await GeneralProposal.find({ inquiryId }).populate("supplierId", "name email -_id");
+
+        if (!proposals || proposals.length === 0) {
+            return res.status(404).json({ message: "No proposals found for this inquiry." });
+        }
+
+        // Combine inquiry and all proposals
+        const response = {
+            inquiryDetails: inquiry,
+            proposals: proposals,
+        };
+
+        res.status(200).json(response);
+    } catch (error) {
+        console.error("Error fetching inquiry proposals:", error.message);
+        res.status(500).json({ error: error.message });
     }
 };

@@ -71,12 +71,16 @@ exports.createGeneralInquiries = async (req, res) => {
 exports.getCustomerInquiries = async (req, res) => {
   try {
     const customerId = sanitize(req.params.customerId); // Sanitize the customerId
-    const inquiries = await GeneralInquiry.find({ customerId }).lean(); // Use .lean() for better performance
+    // Fetch only the required fields
+    const inquiries = await GeneralInquiry.find({ customerId })
+      .select('ppc specifications quantity quantityType createdAt status') // Specify the fields you want
+      .lean(); // Use .lean() for better performance
     res.status(200).json(inquiries);
   } catch (error) {
     res.status(500).json({ message: "Error fetching customer inquiries", error: error.message });
   }
 };
+
 
 // 3. Get Inquiries for a Nominated Supplier
 exports.getSupplierInquiries = async (req, res) => {
@@ -86,5 +90,33 @@ exports.getSupplierInquiries = async (req, res) => {
     res.status(200).json(inquiries);
   } catch (error) {
     res.status(500).json({ message: "Error fetching supplier inquiries", error: error.message });
+  }
+};
+
+exports.closeInquiry = async (req, res) => {
+  console.log("Closing inquiry");
+  try {
+    const inquiryId = sanitize(req.params.inquiryId);
+    console.log("Inquiry ID: ", inquiryId);
+    // Find the inquiry by ID and update the status
+    const updatedInquiry = await GeneralInquiry.findByIdAndUpdate(
+      inquiryId,
+      { status: "inquiry_close" }, // Set the status to inquiry_close
+      { new: true } // Return the updated document
+    );
+
+    if (!updatedInquiry) {
+      return res.status(404).json({ message: "Inquiry not found" }); // Handle case where inquiry ID is invalid
+    }
+
+    res.status(201).json({
+      message: "Inquiry closed successfully",
+    });
+  } catch (error) {
+    console.log(error.message);
+    res.status(500).json({
+      message: "Error updating inquiry status",
+      error: error.message
+    });
   }
 };

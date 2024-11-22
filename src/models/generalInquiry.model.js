@@ -54,7 +54,8 @@ const generalInquirySchema = new mongoose.Schema(
       type: String,
       enum: [
         "inquiry_sent",
-        "inquiry_replied"
+        "inquiry_replied",
+        "inquiry_close"
       ],
       default: "inquiry_sent",
     },

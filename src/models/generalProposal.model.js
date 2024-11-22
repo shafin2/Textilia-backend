@@ -11,11 +11,6 @@ const generalProposalSchema = new mongoose.Schema({
         ref: "User",
         required: true
     },
-    customerId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-        required: true
-    },
     rate: { type: Number, required: true },
     quantity: { type: Number, required: true },
     quantityType: {
