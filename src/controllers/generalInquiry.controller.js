@@ -73,7 +73,8 @@ exports.getCustomerInquiries = async (req, res) => {
     const customerId = sanitize(req.params.customerId); // Sanitize the customerId
     // Fetch only the required fields
     const inquiries = await GeneralInquiry.find({ customerId })
-      .select('ppc specifications quantity quantityType createdAt status') // Specify the fields you want
+      .select('ppc specifications quantity quantityType createdAt status')
+      .sort({ createdAt: -1 }) // Sort in descending order
       .lean(); // Use .lean() for better performance
     res.status(200).json(inquiries);
   } catch (error) {
@@ -86,7 +87,7 @@ exports.getCustomerInquiries = async (req, res) => {
 exports.getSupplierInquiries = async (req, res) => {
   try {
     const supplierId = sanitize(req.params.supplierId); // Sanitize the supplierId
-    const inquiries = await GeneralInquiry.find({ nomination: supplierId }).lean(); // Use .lean() for better performance
+    const inquiries = await GeneralInquiry.find({ nomination: supplierId }).sort({ createdAt: -1 }).lean(); // Use .lean() for better performance
     res.status(200).json(inquiries);
   } catch (error) {
     res.status(500).json({ message: "Error fetching supplier inquiries", error: error.message });
@@ -101,7 +102,7 @@ exports.closeInquiry = async (req, res) => {
     // Find the inquiry by ID and update the status
     const updatedInquiry = await GeneralInquiry.findByIdAndUpdate(
       inquiryId,
-      { status: "inquiry_close" }, // Set the status to inquiry_close
+      { status: "inquiry_closed" }, // Set the status to inquiry_close
       { new: true } // Return the updated document
     );
 
@@ -111,6 +112,7 @@ exports.closeInquiry = async (req, res) => {
 
     res.status(201).json({
       message: "Inquiry closed successfully",
+      updatedInquiry
     });
   } catch (error) {
     console.log(error.message);

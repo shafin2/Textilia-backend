@@ -4,7 +4,6 @@ const GeneralInquiry = require("../models/generalInquiry.model");
 
 exports.createGeneralProposals = async (req, res) => {
     const proposalsData = req.body.proposals; // Expect an array of proposal details
-console.log(proposalsData)
     if (!Array.isArray(proposalsData) || proposalsData.length === 0) {
         return res.status(400).json({ message: "No proposals provided" });
     }
@@ -39,7 +38,7 @@ console.log(proposalsData)
             createdProposals.push(proposal);
 
             // Update the inquiry status
-            inquiry.status = "inquiry_replied"; 
+            inquiry.status = "proposal_sent"; 
             await inquiry.save();
         }
 
@@ -53,7 +52,8 @@ console.log(proposalsData)
 exports.getCustomerProposals = async (req, res) => {
     try {
         const proposals = await GeneralProposal.find({ customerId: req.user._id })
-            .populate('supplierId', 'name'); // Populate supplier details
+            .populate('supplierId', 'name') // Populate supplier details
+            .sort({ createdAt: -1 });
 
         res.json(proposals);
     } catch (error) {
@@ -65,7 +65,8 @@ exports.getCustomerProposals = async (req, res) => {
 exports.getSupplierProposals = async (req, res) => {
     try {
         const proposals = await GeneralProposal.find({ supplierId: req.user.id })
-            .populate('inquiryId', 'details'); // Populate to get inquiry details for context
+            .populate('inquiryId', 'details') // Populate to get inquiry details for context
+            .sort({ createdAt: -1 });
 
         res.json({ proposals });
     } catch (error) {
@@ -81,17 +82,19 @@ exports.acceptGeneralProposal = async (req, res) => {
         if (!proposal) {
             return res.status(404).json({ message: "Proposal not found" });
         }
-
         const inquiry = await GeneralInquiry.findById(proposal.inquiryId);
-        if (inquiry.customerId.toString() !== req.user.id.toString()) {
-            return res.status(403).json({ message: "Unauthorized action" });
-        }
-
+        // console.log(inquiry.customerId.toString(), req.user.id.toString())
+        // if (inquiry.customerId.toString() !== req.user.id.toString()) {
+        //     return res.status(403).json({ message: "Unauthorized action" });
+        // }
+        inquiry.status = "proposal_accepted";
+        await inquiry.save();
         proposal.status = "proposal_accepted";
         await proposal.save();
 
-        res.status(200).json({ message: "Proposal accepted successfully", proposal });
+        res.status(201).json({ message: "Proposal accepted successfully", proposal });
     } catch (error) {
+        console.error("Error accepting proposal:", error.message);
         res.status(500).json({ message: "Error accepting proposal", error: error.message });
     }
 };
