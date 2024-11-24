@@ -53,12 +53,18 @@ const generalInquirySchema = new mongoose.Schema(
     status: {
       type: String,
       enum: [
-        "inquiry_sent",
-        "inquiry_replied",
-        "inquiry_close"
+        "inquiry_sent",       // Inquiry has been sent by the customer.
+        "proposal_sent",      // Supplier has responded with a proposal.
+        "negotiation",        // Inquiry is under negotiation.
+        "proposal_accepted",  // Customer has accepted the proposal.
+        "contract_sent",      // Supplier has sent the contract.
+        "contract_accepted",  // Contract has been accepted by the customer.
+        "contract_running",   // Contract is currently in progress.
+        "delivered",          // Items/services under the contract have been delivered.
+        "inquiry_closed"      // Inquiry has been closed by either party.
       ],
       default: "inquiry_sent",
-    },
+    }    
   },
   {
     timestamps: true,

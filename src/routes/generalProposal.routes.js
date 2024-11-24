@@ -7,7 +7,7 @@ const { protect } = require("../middleware/auth.middleware");
 router.post('/create',protect(["supplier"]) ,createGeneralProposals);
 router.get('/customer', protect(["client"]), getCustomerProposals);
 router.get('/supplier',protect(["supplier"]), getSupplierProposals);
-router.patch('/:proposalId/accept', protect(["client"]), acceptGeneralProposal);
+router.post('/:proposalId/accept', protect(["client"]), acceptGeneralProposal);
 router.get("/inquiryProposals/:inquiryId", getInquiryProposals);
 
 module.exports = router;
