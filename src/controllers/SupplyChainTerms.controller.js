@@ -26,7 +26,6 @@ const getAllNewSupplyChainProposals = async (req, res) => {
 			.populate("supplier", "name _id")
 			.populate("userId", "name _id");
 
-		console.log("supplyChain", supplyChain);
 		res.status(200).json(supplyChain);
 	} catch (error) {
 		res.status(500).json({ message: "Error getting payment terms.", error });
@@ -64,6 +63,23 @@ const createGeneralSupplyChainTerm = async (req, res) => {
 		const { userId, paymentMode, shipmentTerms, businessConditions, days } =
 			req.body;
 
+		// Check if userId is provided
+		if (!userId) {
+			return res.status(400).json({ message: "User ID is required." });
+		}
+
+		// Check if a general proposal already exists for this user
+		const existingProposal = await SupplyChain.findOne({
+			userId,
+			general: true,
+		});
+
+		if (existingProposal) {
+			return res
+				.status(400)
+				.json({ message: "General Proposal already exists." });
+		}
+
 		const supplyChainTerm = new SupplyChain({
 			userId,
 			general: true,
@@ -73,19 +89,8 @@ const createGeneralSupplyChainTerm = async (req, res) => {
 			days,
 		});
 
-		if (userId) {
-			const existingProposal = await SupplyChain.findOne({
-				userId,
-				general: true,
-			});
-			if (existingProposal) {
-				return res
-					.status(400)
-					.json({ message: "General Proposal already exists." });
-			}
-		}
+		await supplyChainTerm.save();
 
-		await SupplyChain.save();
 		res.status(201).json({
 			message: "General supply chain term created successfully.",
 			supplyChainTerm,
@@ -102,8 +107,6 @@ const updateGeneralSupplyChainTerm = async (req, res) => {
 	try {
 		const { paymentMode, shipmentTerms, businessConditions, days } = req.body;
 		const { generalTermId } = req.params;
-
-		console.log("generalTermId", generalTermId);
 
 		if (
 			generalTermId === "undefined" ||
@@ -133,7 +136,6 @@ const updateGeneralSupplyChainTerm = async (req, res) => {
 			generalTerm,
 		});
 	} catch (error) {
-		console.log("error", error);
 		res.status(500).json({ message: "Error updating general Term.", error });
 	}
 };
@@ -150,8 +152,6 @@ const createNewSupplyChainTerm = async (req, res) => {
 			days,
 			endDate,
 		} = req.body;
-
-		console.log("req.body", req.body);
 
 		if (supplier) {
 			const user = await User.findById(supplier);
@@ -253,8 +253,6 @@ const replyToSupplyChainTerm = async (req, res) => {
 			supplierEndDate,
 		} = req.body;
 
-		console.log("req.body", req.body);
-
 		// Validate required fields
 		if (!proposalId || !supplierId || !customerId) {
 			return res.status(400).json({ message: "Invalid request." });
@@ -295,8 +293,6 @@ const replyToSupplyChainTerm = async (req, res) => {
 		paymentTerm.supplierEndDate = supplierEndDate;
 		paymentTerm.status = "proposal_replied";
 
-		console.log("paymentTerm", paymentTerm);
-
 		// Save the updated payment term
 		await paymentTerm.save();
 
@@ -304,7 +300,6 @@ const replyToSupplyChainTerm = async (req, res) => {
 			.status(200)
 			.json({ message: "Payment Term replied successfully.", paymentTerm });
 	} catch (error) {
-		console.log("error", error);
 		res.status(500).json({ message: "Error replying to payment Term.", error });
 	}
 };

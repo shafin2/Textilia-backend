@@ -113,4 +113,4 @@ payment_termSchema.pre("save", function (next) {
 // Create a compound index to ensure uniqueness between userId and supplier
 payment_termSchema.index({ userId: 1, supplier: 1 }, { unique: true });
 
-module.exports = mongoose.model("Proposal", payment_termSchema);
+module.exports = mongoose.model("SupplyChain", payment_termSchema);

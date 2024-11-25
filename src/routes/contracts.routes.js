@@ -7,6 +7,9 @@ const {
 	getAllUserContracts,
 	getAllNewUserContracts,
 	acceptContract,
+	getAllRunningUserContracts,
+	getAllCompletedUserContracts,
+	getAllBlockBookingUserContracts,
 } = require("../controllers/contract.controller");
 
 router.get("/:id", protect(["supplier", "client"]), getContractById);
@@ -14,6 +17,21 @@ router.get(
 	"/all/:userId",
 	protect(["supplier", "client"]),
 	getAllUserContracts
+);
+router.get(
+	"/running/:userId",
+	protect(["supplier", "client"]),
+	getAllRunningUserContracts
+);
+router.get(
+	"/completed/:userId",
+	protect(["supplier", "client"]),
+	getAllCompletedUserContracts
+);
+router.get(
+	"/blockbooking/:userId",
+	protect(["supplier", "client"]),
+	getAllBlockBookingUserContracts
 );
 router.get(
 	"/new/:userId",
