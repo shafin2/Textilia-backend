@@ -103,7 +103,6 @@ exports.getSupplierProposals = async (req, res) => {
 					select: "name profile.companyDetails",
 				},
 			});
-		console.log(proposals);
 		res.status(200).json(proposals);
 	} catch (error) {
 		console.error("Error fetching supplier proposals:", error.message);
