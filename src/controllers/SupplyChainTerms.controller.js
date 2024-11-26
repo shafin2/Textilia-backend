@@ -1,11 +1,11 @@
-const PaymentTerm = require("../models/paymentTerm.model");
+const SupplyChain = require("../models/supplyChainTerm.model");
 const User = require("../models/user.model");
 
 // Get all PaymentTerms For debugging purposes
-const getAllPaymentTerms = async (req, res) => {
+const getAllSupplyChains = async (req, res) => {
 	try {
-		const paymentTerms = await PaymentTerm.find();
-		res.status(200).json({ paymentTerms });
+		const supplyChain = await SupplyChain.find();
+		res.status(200).json({ supplyChain });
 	} catch (error) {
 		res.status(500).json({ message: "Error getting payment terms.", error });
 	}
@@ -19,22 +19,21 @@ const getAllNewSupplyChainProposals = async (req, res) => {
 			return res.status(400).json({ message: "Invalid user ID." });
 		}
 
-		const paymentTerms = await PaymentTerm.find({
+		const supplyChain = await SupplyChain.find({
 			$or: [{ userId: userId }, { supplier: userId }],
 			$and: [{ general: false }],
 		})
 			.populate("supplier", "name _id")
 			.populate("userId", "name _id");
 
-		console.log("paymentTerms", paymentTerms);
-		res.status(200).json(paymentTerms);
+		res.status(200).json(supplyChain);
 	} catch (error) {
 		res.status(500).json({ message: "Error getting payment terms.", error });
 	}
 };
 
 // Get General PaymentTerm
-const getGeneralPaymentTerm = async (req, res) => {
+const getGeneralSupplyChainTerms = async (req, res) => {
 	try {
 		const { userId } = req.params;
 
@@ -42,7 +41,7 @@ const getGeneralPaymentTerm = async (req, res) => {
 			return res.status(400).json({ message: "Invalid user ID." });
 		}
 
-		const generalTerms = await PaymentTerm.findOne({
+		const generalTerms = await SupplyChain.findOne({
 			userId,
 			general: true,
 		});
@@ -59,12 +58,29 @@ const getGeneralPaymentTerm = async (req, res) => {
 };
 
 // Create General PaymentTerm
-const createGeneralPaymentTerm = async (req, res) => {
+const createGeneralSupplyChainTerm = async (req, res) => {
 	try {
 		const { userId, paymentMode, shipmentTerms, businessConditions, days } =
 			req.body;
 
-		const paymentTerm = new PaymentTerm({
+		// Check if userId is provided
+		if (!userId) {
+			return res.status(400).json({ message: "User ID is required." });
+		}
+
+		// Check if a general proposal already exists for this user
+		const existingProposal = await SupplyChain.findOne({
+			userId,
+			general: true,
+		});
+
+		if (existingProposal) {
+			return res
+				.status(400)
+				.json({ message: "General Proposal already exists." });
+		}
+
+		const supplyChainTerm = new SupplyChain({
 			userId,
 			general: true,
 			paymentMode,
@@ -73,37 +89,24 @@ const createGeneralPaymentTerm = async (req, res) => {
 			days,
 		});
 
-		if (userId) {
-			const existingProposal = await PaymentTerm.findOne({
-				userId,
-				general: true,
-			});
-			if (existingProposal) {
-				return res
-					.status(400)
-					.json({ message: "General Proposal already exists." });
-			}
-		}
+		await supplyChainTerm.save();
 
-		await paymentTerm.save();
 		res.status(201).json({
-			message: "General payment Term created successfully.",
-			paymentTerm,
+			message: "General supply chain term created successfully.",
+			supplyChainTerm,
 		});
 	} catch (error) {
 		res
 			.status(500)
-			.json({ message: "Error creating general payment Term.", error });
+			.json({ message: "Error creating general supply chain term.", error });
 	}
 };
 
 // update the general PaymentTerm
-const updateGeneralPaymentTerm = async (req, res) => {
+const updateGeneralSupplyChainTerm = async (req, res) => {
 	try {
 		const { paymentMode, shipmentTerms, businessConditions, days } = req.body;
 		const { generalTermId } = req.params;
-
-		console.log("generalTermId", generalTermId);
 
 		if (
 			generalTermId === "undefined" ||
@@ -117,7 +120,7 @@ const updateGeneralPaymentTerm = async (req, res) => {
 			return res.status(400).json({ message: "Invalid request." });
 		}
 
-		const generalTerm = await PaymentTerm.findById(generalTermId);
+		const generalTerm = await SupplyChain.findById(generalTermId);
 		if (!generalTerm) {
 			return res.status(404).json({ message: "General Term not found." });
 		}
@@ -133,13 +136,12 @@ const updateGeneralPaymentTerm = async (req, res) => {
 			generalTerm,
 		});
 	} catch (error) {
-		console.log("error", error);
 		res.status(500).json({ message: "Error updating general Term.", error });
 	}
 };
 
 // Create New PaymentTerm
-const createNewPaymentTerm = async (req, res) => {
+const createNewSupplyChainTerm = async (req, res) => {
 	try {
 		const {
 			userId,
@@ -151,15 +153,13 @@ const createNewPaymentTerm = async (req, res) => {
 			endDate,
 		} = req.body;
 
-		console.log("req.body", req.body);
-
 		if (supplier) {
 			const user = await User.findById(supplier);
 			if (!user || user.businessType !== "supplier") {
 				return res.status(400).json({ message: "Invalid supplier." });
 			}
 
-			const existingProposal = await PaymentTerm.findOne({ userId, supplier });
+			const existingProposal = await SupplyChain.findOne({ userId, supplier });
 			if (existingProposal) {
 				return res
 					.status(400)
@@ -167,7 +167,7 @@ const createNewPaymentTerm = async (req, res) => {
 			}
 		}
 
-		const paymentTerm = new PaymentTerm({
+		const supplyChainTerm = new SupplyChain({
 			userId,
 			supplier,
 			paymentMode,
@@ -178,10 +178,11 @@ const createNewPaymentTerm = async (req, res) => {
 			status: "proposal_sent_received",
 		});
 
-		await paymentTerm.save();
-		res
-			.status(201)
-			.json({ message: "New payment term created successfully.", paymentTerm });
+		await SupplyChain.save();
+		res.status(201).json({
+			message: "New payment term created successfully.",
+			supplyChainTerm,
+		});
 	} catch (error) {
 		res
 			.status(500)
@@ -190,7 +191,7 @@ const createNewPaymentTerm = async (req, res) => {
 };
 
 // Renew Payment Term
-const renewPaymentTerm = async (req, res) => {
+const renewSupplyChainTerm = async (req, res) => {
 	try {
 		const {
 			paymentTermId,
@@ -202,7 +203,7 @@ const renewPaymentTerm = async (req, res) => {
 		} = req.body;
 
 		// Find the existing payment term
-		const paymentTerm = await PaymentTerm.findById(paymentTermId);
+		const paymentTerm = await SupplyChain.findById(paymentTermId);
 		if (!paymentTerm) {
 			return res.status(404).json({ message: "Payment Term not found." });
 		}
@@ -241,7 +242,7 @@ const renewPaymentTerm = async (req, res) => {
 	}
 };
 
-const replyToPaymentTerm = async (req, res) => {
+const replyToSupplyChainTerm = async (req, res) => {
 	try {
 		const {
 			proposalId,
@@ -251,8 +252,6 @@ const replyToPaymentTerm = async (req, res) => {
 			supplierBusinessConditions,
 			supplierEndDate,
 		} = req.body;
-
-		console.log("req.body", req.body);
 
 		// Validate required fields
 		if (!proposalId || !supplierId || !customerId) {
@@ -278,7 +277,7 @@ const replyToPaymentTerm = async (req, res) => {
 		}
 
 		// Find the payment term
-		const paymentTerm = await PaymentTerm.findOne({
+		const paymentTerm = await SupplyChain.findOne({
 			_id: proposalId,
 			userId: customerId,
 			supplier: supplierId,
@@ -294,8 +293,6 @@ const replyToPaymentTerm = async (req, res) => {
 		paymentTerm.supplierEndDate = supplierEndDate;
 		paymentTerm.status = "proposal_replied";
 
-		console.log("paymentTerm", paymentTerm);
-
 		// Save the updated payment term
 		await paymentTerm.save();
 
@@ -303,7 +300,6 @@ const replyToPaymentTerm = async (req, res) => {
 			.status(200)
 			.json({ message: "Payment Term replied successfully.", paymentTerm });
 	} catch (error) {
-		console.log("error", error);
 		res.status(500).json({ message: "Error replying to payment Term.", error });
 	}
 };
@@ -333,7 +329,7 @@ const acceptContract = async (req, res) => {
 			return res.status(400).json({ message: "Invalid Supplier." });
 		}
 
-		const contract = await PaymentTerm.findById(contractId);
+		const contract = await SupplyChain.findById(contractId);
 		if (!contract) {
 			return res.status(404).json({ message: "Payment Term not found." });
 		}
@@ -362,13 +358,13 @@ const getAllUsers = async (req, res) => {
 // Exporting the controller functions
 module.exports = {
 	getAllUsers,
-	getAllPaymentTerms,
+	getAllSupplyChains,
 	getAllNewSupplyChainProposals,
-	getGeneralPaymentTerm,
-	createGeneralPaymentTerm,
-	updateGeneralPaymentTerm,
-	createNewPaymentTerm,
-	renewPaymentTerm,
-	replyToPaymentTerm,
+	getGeneralSupplyChainTerms,
+	createGeneralSupplyChainTerm,
+	updateGeneralSupplyChainTerm,
+	createNewSupplyChainTerm,
+	renewSupplyChainTerm,
+	replyToSupplyChainTerm,
 	acceptContract,
 };

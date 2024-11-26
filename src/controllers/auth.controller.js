@@ -46,10 +46,13 @@ exports.loginUser = async (req, res) => {
 		if (!isMatch)
 			return res.status(400).json({ message: "Invalid email or password" });
 
+		console.log("User: ", user);
+
 		res.json({
 			_id: user._id,
 			name: user.name,
 			email: user.email,
+			profile: user.profile.companyDetails,
 			businessType: user.businessType,
 			token: generateToken(user),
 		});
