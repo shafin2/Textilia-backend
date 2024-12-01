@@ -46,9 +46,9 @@ exports.getInquiries = async (req, res) => {
     try {
         // Fetch all inquiries with only the required fields
         const inquiries = await BlockBookingInquiry.find()
-            .select("aging baseCount targetBasePrice status createdAt customerId") // Include necessary fields
-            .populate("customerId", "name email") // Optional: Populate customer details
-            .lean(); // Convert to plain JavaScript objects
+            .select("aging baseCount targetBasePrice status createdAt customerId") 
+            .populate("customerId", "name email") 
+            .lean(); 
 
         // Respond with all inquiries
         res.status(200).json(inquiries);
@@ -103,7 +103,7 @@ exports.declineInquiry = async (req, res) => {
         // Find the inquiry by ID and update its status
         const inquiry = await BlockBookingInquiry.findByIdAndUpdate(
             inquiryId,
-            { status: "inquiry_declined" },
+            { status: "inquiry_closed" },
             { new: true }
         ).lean();
 
@@ -114,7 +114,7 @@ exports.declineInquiry = async (req, res) => {
         // Update all proposals related to this inquiry
         await BlockBookingProposal.updateMany(
             { inquiryId: inquiryId },
-            { status: "inquiry_declined" }
+            { status: "inquiry_closed" }
         );
 
         // Respond with the updated inquiry data

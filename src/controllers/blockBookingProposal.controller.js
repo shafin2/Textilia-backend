@@ -53,7 +53,7 @@ exports.createProposal = async (req, res) => {
 		const savedProposal = await proposal.save();
 
 		// Update the status of the inquiry
-		inquiry.status = "inquiry_replied";
+		inquiry.status = "proposal_sent";
 		await inquiry.save();
 		res.status(201).json({
 			message: "Proposal created successfully.",
