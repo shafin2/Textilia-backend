@@ -178,7 +178,7 @@ const createNewSupplyChainTerm = async (req, res) => {
 			status: "proposal_sent_received",
 		});
 
-		await SupplyChain.save();
+		await supplyChainTerm.save();
 		res.status(201).json({
 			message: "New payment term created successfully.",
 			supplyChainTerm,
