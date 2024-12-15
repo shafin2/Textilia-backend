@@ -19,6 +19,14 @@ const blockBookingInquirySchema = new mongoose.Schema({
     count: { type: Number, required: true },
     price: { type: Number, required: true }
   }],
+  quantity: { type: Number, required: true },
+  quantityType: {
+    type: String,
+    enum: ["kg", "lbs", "bags"],
+    required: true
+  },
+  deliveryStartDate: { type: Date, required: true },
+  deliveryEndDate: { type: Date,required: true },
   paymentTerms: {
     paymentMode: { type: String, enum: ["advance", "credit", "pdc", "advance_pdc", "lc"], required: true },
     days: { type: Number, required: true },
