@@ -15,8 +15,7 @@ const generalProposalSchema = new mongoose.Schema({
     quantity: { type: Number, required: true },
     quantityType: {
         type: String,
-        enum: ["kg", "lbs", "bags"],
-        required: true
+        enum: ["kg", "lbs", "bags"]
     },
     deliveryStartDate: { type: Date, required: true },
     deliveryEndDate: { type: Date, required: true },

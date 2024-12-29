@@ -125,19 +125,23 @@ exports.getCustomerInquiries = async (req, res) => {
 exports.getSupplierInquiries = async (req, res) => {
 	try {
 		const supplierId = sanitize(req.params.supplierId); // Sanitize the supplierId
+
+		// Fetch inquiries and populate the customer (user) name
 		const inquiries = await GeneralInquiry.find({ nomination: supplierId })
 			.sort({ createdAt: -1 })
+			.populate("customerId", "name email") // Populate user name field
 			.lean(); // Use .lean() for better performance
+
+		console.log("Inquiries: ", inquiries);
 		res.status(200).json(inquiries);
 	} catch (error) {
-		res
-			.status(500)
-			.json({
-				message: "Error fetching supplier inquiries",
-				error: error.message,
-			});
+		res.status(500).json({
+			message: "Error fetching supplier inquiries",
+			error: error.message,
+		});
 	}
 };
+
 
 exports.closeInquiry = async (req, res) => {
 	console.log("Closing inquiry");

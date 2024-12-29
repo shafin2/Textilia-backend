@@ -71,23 +71,46 @@ exports.getCustomerProposals = async (req, res) => {
 
 		// Fetch inquiries made by the customer
 		const inquiries = await BlockBookingInquiry.find({ customerId }).select(
-			"_id baseCount targetBasePrice createdAt status aging"
+			"_id baseCount quantity quantityType deliveryEndDate targetBasePrice createdAt status aging"
 		);
+
+		// Map inquiries to extract their IDs
+		const inquiryIds = inquiries.map((inquiry) => inquiry._id);
+
+		// Aggregate to count proposals for each inquiry
+		const proposalCounts = await BlockBookingProposal.aggregate([
+			{ $match: { inquiryId: { $in: inquiryIds } } },
+			{ $group: { _id: "$inquiryId", count: { $sum: 1 } } },
+		]);
+
+		// Create a mapping of inquiryId to proposal count
+		const proposalCountMap = proposalCounts.reduce((map, item) => {
+			map[item._id.toString()] = item.count;
+			return map;
+		}, {});
 
 		// Fetch all proposals related to those inquiries
 		const proposals = await BlockBookingProposal.find({
-			inquiryId: { $in: inquiries.map((inquiry) => inquiry._id) },
+			inquiryId: { $in: inquiryIds },
 		})
 			.select("inquiryId supplierId createdAt status aging")
-			.populate("inquiryId", "baseCount targetBasePrice createdAt status aging")
+			.populate("inquiryId", "baseCount quantity quantityType deliveryEndDate targetBasePrice createdAt status aging")
 			.populate("supplierId", "name email");
 
-		res.status(200).json(proposals);
+		// Add proposalCount to proposals
+		const proposalsWithCounts = proposals.map((proposal) => ({
+			...proposal.toObject(),
+			proposalCount: proposalCountMap[proposal.inquiryId._id.toString()] || 0,
+		}));
+
+		// Respond with the proposals including the new field
+		res.status(200).json(proposalsWithCounts);
 	} catch (error) {
 		console.error("Error fetching customer proposals:", error.message);
 		res.status(500).json({ error: error.message });
 	}
 };
+
 
 exports.getSupplierProposals = async (req, res) => {
 	try {
