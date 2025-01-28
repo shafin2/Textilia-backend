@@ -9,7 +9,7 @@ const contractSchema = new mongoose.Schema(
 			ref: "User",
 			required: true,
 		},
-		clientId: {
+		customerId: {
 			type: mongoose.Schema.Types.ObjectId,
 			ref: "User",
 			required: true,

@@ -12,33 +12,33 @@ const {
 	getAllBlockBookingUserContracts,
 } = require("../controllers/contract.controller");
 
-router.get("/:id", protect(["supplier", "client"]), getContractById);
+router.get("/:id", protect(["supplier", "customer"]), getContractById);
 router.get(
 	"/all/:userId",
-	protect(["supplier", "client"]),
+	protect(["supplier", "customer"]),
 	getAllUserContracts
 );
 router.get(
 	"/running/:userId",
-	protect(["supplier", "client"]),
+	protect(["supplier", "customer"]),
 	getAllRunningUserContracts
 );
 router.get(
 	"/completed/:userId",
-	protect(["supplier", "client"]),
+	protect(["supplier", "customer"]),
 	getAllCompletedUserContracts
 );
 router.get(
 	"/blockbooking/:userId",
-	protect(["supplier", "client"]),
+	protect(["supplier", "customer"]),
 	getAllBlockBookingUserContracts
 );
 router.get(
 	"/new/:userId",
-	protect(["supplier", "client"]),
+	protect(["supplier", "customer"]),
 	getAllNewUserContracts
 );
 router.post("/create", protect(["supplier"]), sendContract);
-router.post("/accept/:id", protect(["client"]), acceptContract);
+router.post("/accept/:id", protect(["customer"]), acceptContract);
 
 module.exports = router;

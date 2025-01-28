@@ -11,7 +11,7 @@ const sendContract = async (req, res) => {
 			contractDate,
 			contractType,
 			supplierId,
-			clientId,
+			customerId,
 			description,
 			// terms,
 		} = req.body;
@@ -27,7 +27,7 @@ const sendContract = async (req, res) => {
 			contractDate,
 			contractType,
 			supplierId,
-			clientId,
+			customerId,
 			description,
 			// terms,
 			contractStatus: "contract_sent_rcvd",
@@ -68,7 +68,7 @@ const getContractById = async (req, res) => {
 	try {
 		const { id } = req.params;
 		const contract = await Contract.findById(id)
-			.populate("supplierId clientId description")
+			.populate("supplierId customerId description")
 			.exec();
 
 		if (!contract) {
@@ -89,9 +89,9 @@ const getAllUserContracts = async (req, res) => {
 		// Query to find contracts for the user, excluding specific statuses
 		const contracts = await Contract.find({
 			contractStatus: { $ne: "contract_sent_rcvd" },
-			$or: [{ supplierId: userId }, { clientId: userId }],
+			$or: [{ supplierId: userId }, { customerId: userId }],
 		})
-			.populate("supplierId clientId", "name")
+			.populate("supplierId customerId", "name")
 			.populate({
 				path: "description",
 				populate: {
@@ -143,9 +143,9 @@ const getAllRunningUserContracts = async (req, res) => {
 		// Query to find contracts for the user, excluding specific statuses
 		const contracts = await Contract.find({
 			contractStatus: "running",
-			$or: [{ supplierId: userId }, { clientId: userId }],
+			$or: [{ supplierId: userId }, { customerId: userId }],
 		})
-			.populate("supplierId clientId", "name")
+			.populate("supplierId customerId", "name")
 			.populate({
 				path: "description",
 				populate: {
@@ -190,15 +190,15 @@ const getAllNewUserContracts = async (req, res) => {
 	try {
 		const { userId } = req.params;
 
-		// Fetch contracts whose contratType is not equal to contract_send_rcvd and populate `supplierId`, `clientId`, and `description`
+		// Fetch contracts whose contratType is not equal to contract_send_rcvd and populate `supplierId`, `customerId`, and `description`
 		const contracts = await Contract.find({
 			contractStatus: {
 				$in: ["contract_sent_rcvd"],
 			},
 			contractType: "general",
-			$or: [{ supplierId: userId }, { clientId: userId }],
+			$or: [{ supplierId: userId }, { customerId: userId }],
 		})
-			.populate("supplierId clientId", "name")
+			.populate("supplierId customerId", "name")
 			.populate({
 				path: "description",
 				populate: "inquiryId",
@@ -237,9 +237,9 @@ const getAllBlockBookingUserContracts = async (req, res) => {
 		const contracts = await Contract.find({
 			contractStatus: { $in: ["contract_sent_rcvd"] },
 			contractType: "block-booking",
-			$or: [{ supplierId: userId }, { clientId: userId }],
+			$or: [{ supplierId: userId }, { customerId: userId }],
 		})
-			.populate("supplierId clientId", "name")
+			.populate("supplierId customerId", "name")
 			.populate({
 				path: "description",
 				populate: {
@@ -266,9 +266,9 @@ const getAllCompletedUserContracts = async (req, res) => {
 		// Query to find contracts for the user, excluding specific statuses
 		const contracts = await Contract.find({
 			contractStatus: "dlvrd",
-			$or: [{ supplierId: userId }, { clientId: userId }],
+			$or: [{ supplierId: userId }, { customerId: userId }],
 		})
-			.populate("supplierId clientId", "name")
+			.populate("supplierId customerId", "name")
 			.populate({
 				path: "description",
 				populate: {
@@ -312,7 +312,7 @@ const getAllCompletedUserContracts = async (req, res) => {
 const getAllContracts = async (req, res) => {
 	try {
 		const contracts = await Contract.find()
-			.populate("supplierId clientId")
+			.populate("supplierId customerId")
 			.exec();
 		res.status(200).json(contracts);
 	} catch (error) {
@@ -326,7 +326,7 @@ const getAllContracts = async (req, res) => {
 const acceptContract = async (req, res) => {
 	try {
 		const { id } = req.params;
-		const { clientId, supplierId } = req.body;
+		const { customerId, supplierId } = req.body;
 
 		const contract = await Contract.findById(id).populate("description");
 
@@ -335,7 +335,7 @@ const acceptContract = async (req, res) => {
 		}
 
 		if (
-			clientId !== contract.clientId.toString() ||
+			customerId !== contract.customerId.toString() ||
 			supplierId !== contract.supplierId.toString()
 		) {
 			return res.status(400).json({ message: "Invalid client or supplier" });

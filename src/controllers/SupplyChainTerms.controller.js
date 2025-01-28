@@ -261,7 +261,7 @@ const replyToSupplyChainTerm = async (req, res) => {
 		// Check if customer exists
 		const user = await User.findOne({
 			_id: customerId,
-			businessType: "client",
+			businessType: "customer",
 		});
 		if (!user) {
 			return res.status(400).json({ message: "Invalid User." });
@@ -315,7 +315,7 @@ const acceptContract = async (req, res) => {
 
 		const user = await User.findOne({
 			_id: customerId,
-			businessType: "client",
+			businessType: "customer",
 		});
 		if (!user) {
 			return res.status(400).json({ message: "Invalid User." });

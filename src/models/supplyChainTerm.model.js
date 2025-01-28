@@ -9,7 +9,7 @@ const payment_termSchema = new mongoose.Schema(
 			validate: {
 				validator: async function (value) {
 					const user = await mongoose.model("User").findById(value);
-					return user && user.businessType === "client";
+					return user && user.businessType === "customer";
 				},
 				message: (props) => `${props.value} is not a valid customer.`,
 			},

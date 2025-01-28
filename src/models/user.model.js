@@ -15,7 +15,7 @@ const userSchema = new mongoose.Schema(
 		name: { type: String, required: true },
 		businessType: {
 			type: String,
-			enum: ["client", "supplier", "agent"],
+			enum: ["customer", "supplier", "agent"],
 			required: true,
 		},
 		email: { type: String, required: true, unique: true },
